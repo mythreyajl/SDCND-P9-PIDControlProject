@@ -34,14 +34,10 @@ int main()
 
   // Initialize PIDs
   PID pid_steer, pid_throttle;
-  pid_steer.Init(0.05, 0.00001, 1.0);
-  //pid_throttle.Init(1.0, 1.0, 1.0);
+  pid_steer.Init(0.1, 0.00001, 1.0);
+  pid_throttle.Init(0.0001, 0.000001, 2.0);
   
-  // CTE related variables
-  bool cte_inited = false;
-  double d_cte, i_cte = 0, prev_cte;
-    
-  h.onMessage([&pid_steer, &pid_throttle, &cte_inited, &d_cte, &i_cte, &prev_cte](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid_steer, &pid_throttle](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -58,42 +54,17 @@ int main()
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value, throttle_value;
           
-          // Obtain steering value
-          /*
-          if(!cte_inited) {
-            cte_inited = true;
-            d_cte = 0;
-          } else {
-            d_cte = cte - prev_cte;
-            prev_cte = cte;
-          }
-          i_cte += cte;*/
           pid_steer.UpdateError(cte);
           steer_value =  -pid_steer.p_error * pid_steer.Kp - pid_steer.i_error * pid_steer.Ki - pid_steer.d_error * pid_steer.Kd;
           
-          /*
-          // Obtain throttle value
-          if(!cte_inited) {
-            cte_inited = true;
-            d_cte = 0;
-          } else {
-            d_cte = cte - prev_cte;
-            prev_cte = cte;
-          }
-          i_cte += cte;
-          throttle_value =  -cte * pid_throttle.Kp - d_cte * pid_throttle.Kd - i_cte * pid_throttle.Ki;
-          */
-          //pid_throttle.UpdateError(cte);
-          //throttle_value =  -pid_throttle.p_error * pid_throttle.Kp - pid_throttle.i_error * pid_throttle.Ki - pid_throttle.d_error * pid_throttle.Kd;
-          
-          // DEBUG
-          //`std::cout << "CTE: " << cte << " Steering Value: " << steer_value << ", Throttle Value: " << throttle_value << std::endl;
+          pid_throttle.UpdateError(speed);
+          throttle_value =  pid_throttle.p_error * pid_throttle.Kp + pid_throttle.i_error * pid_throttle.Ki + pid_throttle.d_error * pid_throttle.Kd;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = 0.3;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          //std::cout << msg << std::endl;
+          std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
