@@ -1,98 +1,34 @@
 # CarND-Controls-PID
-Self-Driving Car Engineer Nanodegree Program
 
----
 
-## Dependencies
+## Reflection
+Here I describe in some detail the PID controller and the hyperparameters I chose, twiddled and froze for the final submission.
 
-* cmake >= 3.5
- * All OSes: [click here for installation instructions](https://cmake.org/install/)
-* make >= 4.1(mac, linux), 3.81(Windows)
-  * Linux: make is installed by default on most Linux distros
-  * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
-  * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
-* gcc/g++ >= 5.4
-  * Linux: gcc / g++ is installed by default on most Linux distros
-  * Mac: same deal as make - [install Xcode command line tools]((https://developer.apple.com/xcode/features/)
-  * Windows: recommend using [MinGW](http://www.mingw.org/)
-* [uWebSockets](https://github.com/uWebSockets/uWebSockets)
-  * Run either `./install-mac.sh` or `./install-ubuntu.sh`.
-  * If you install from source, checkout to commit `e94b6e1`, i.e.
-    ```
-    git clone https://github.com/uWebSockets/uWebSockets 
-    cd uWebSockets
-    git checkout e94b6e1
-    ```
-    Some function signatures have changed in v0.14.x. See [this PR](https://github.com/udacity/CarND-MPC-Project/pull/3) for more details.
-* Simulator. You can download these from the [project intro page](https://github.com/udacity/self-driving-car-sim/releases) in the classroom.
+### Effect of P.I.D. components:
+Each component had a major role to play in the fully functional controller.
 
-Fellow students have put together a guide to Windows set-up for the project [here](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/files/Kidnapped_Vehicle_Windows_Setup.pdf) if the environment you have set up for the Sensor Fusion projects does not work for this project. There's also an experimental patch for windows in this [PR](https://github.com/udacity/CarND-PID-Control-Project/pull/3).
+#### P - Proportionality
+This component was the crux of the controller as explained in the vidoes. The proportionality component makes the controller steer in proportion to the error. However as the video shows, this introduces ringing and overshooting because it is impossible to reach zero steering angle even on a relatively straight road. This is illustrated in the video link below:
 
-## Basic Build Instructions
+![Effect of using only P control](Videos/P-Steer.mov)
 
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-4. Run it: `./pid`. 
+#### D - Deravative
+This component controls the 2nd order effect. i.e., this acts on the rate of change of cross-track error. What this ensures is more order in the steering control by making sure that the controller doesn't overreact by oversteering when the curvature of the road is high. Applying steers twice hurts badly. So the D control is used in conjunction with the P controller to reward more steering only when the change is appreciable. It also helps in understeering. The effect of P+D control is illustrated in the video link below:
 
-Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
+![Effect of PD control](Videos/PD-Steer.mov)
 
-## Editor Settings
+#### I - Integral
+The Integral component as the name suggests applies control action based on the duration of the persistent input signal being observed. These are particularly useful when there is an offset between the desired result and the observed result. The PID controller illustrated in the video link below:
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
+![Effect of PID control](Videos/PID-Steer.mov)
 
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
+The effects of each of the components look fairly evident in the videos
 
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
-for instructions and the project rubric.
-
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+### Tuning - Hyperparameter choice
+In order to tune this algorithm I followed the sequence described below:
+1. I implemented twiddling.
+2. Following this, I initialized the parameters as the video lectures suggested. 
+3. The above step didn't yeild the results I was expecting. My issue was that I was overshooting significantly and on later examination, my intergral component was way too high. 
+4. Also, the 'dp' for the tuning of the parameters were too high. 
+5. After a log-binary search type manual parameter tuning, I was able to arrive at parameters that were satisfactory.
 
